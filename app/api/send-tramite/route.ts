@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import { requireRole } from "@/lib/api-auth"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -10,6 +11,11 @@ interface DocAttachment {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRole(["admin", "operador"])
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
   try {
     const { to, clientName, vendorName, containerNumber, invoiceNumber, vesselNumber, blNumber, documents } =
       (await req.json()) as {

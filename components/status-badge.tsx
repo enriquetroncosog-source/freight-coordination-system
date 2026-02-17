@@ -63,6 +63,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     label: "Red Light",
     className: "bg-red-100 text-red-800 border-red-200",
   },
+  liberado_rojo: {
+    label: "Liberado de Rojo",
+    className: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  },
   delivered: {
     label: "Delivered",
     className: "bg-emerald-100 text-emerald-800 border-emerald-200",

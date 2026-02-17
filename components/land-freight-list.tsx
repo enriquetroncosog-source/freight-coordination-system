@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/status-badge"
 import { LandFreightCreateDialog } from "@/components/land-freight-create-dialog"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth-provider"
+import { CAN_CREATE_FREIGHT } from "@/lib/auth"
 
 async function fetchLandFreight() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("land_freight")
-    .select("id, client_name, freight_date, freight_time, origin, destination, carrier_name, status, description, created_at")
+    .select("id, folio, client_name, freight_date, freight_time, origin, destination, carrier_name, status, description, created_at")
     .order("created_at", { ascending: false })
 
   if (error) throw error
@@ -26,9 +28,12 @@ export function LandFreightList() {
   const { data: entries, isLoading, mutate } = useSWR("land-freight", fetchLandFreight)
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
+  const { user } = useAuth()
+  const canCreate = user && CAN_CREATE_FREIGHT.includes(user.role)
 
   const filtered = entries?.filter(
     (e) =>
+      (e.folio?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
       (e.client_name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
       (e.origin?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
       (e.destination?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
@@ -44,10 +49,12 @@ export function LandFreightList() {
             Manage land freight shipments and carta porte documents
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          New Freight
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            New Freight
+          </Button>
+        )}
       </div>
 
       <div className="relative">
@@ -71,7 +78,7 @@ export function LandFreightList() {
             <p className="text-sm text-muted-foreground">
               {search ? "No se encontraron resultados" : "No hay entradas de Land Freight"}
             </p>
-            {!search && (
+            {!search && canCreate && (
               <Button variant="outline" onClick={() => setShowCreate(true)}>
                 Crear Primera Entrada
               </Button>
@@ -89,7 +96,12 @@ export function LandFreightList() {
                       <Truck className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {entry.folio && (
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-bold text-primary">
+                            {entry.folio}
+                          </span>
+                        )}
                         {entry.origin && entry.destination
                           ? `${entry.origin} → ${entry.destination}`
                           : entry.carrier_name ?? "Nuevo Flete"}

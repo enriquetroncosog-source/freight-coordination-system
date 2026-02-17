@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/status-badge"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth-provider"
 
 async function fetchDashboardData() {
   const supabase = createClient()
@@ -56,6 +57,8 @@ export function DashboardContent() {
   const { data, isLoading } = useSWR("dashboard", fetchDashboardData, {
     refreshInterval: 10000,
   })
+  const { user } = useAuth()
+  const showOcean = user?.role !== "transportista"
 
   if (isLoading || !data) {
     return (
@@ -75,21 +78,23 @@ export function DashboardContent() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Ocean Freight
-            </CardTitle>
-            <Ship className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{data.oceanStats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {data.oceanStats.pending} pending, {data.oceanStats.cleared} cleared
-            </p>
-          </CardContent>
-        </Card>
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${showOcean ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+        {showOcean && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Ocean Freight
+              </CardTitle>
+              <Ship className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">{data.oceanStats.total}</div>
+              <p className="text-xs text-muted-foreground">
+                {data.oceanStats.pending} pending, {data.oceanStats.cleared} cleared
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -115,7 +120,7 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {data.oceanStats.pending + data.landStats.pending}
+              {(showOcean ? data.oceanStats.pending : 0) + data.landStats.pending}
             </div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
@@ -130,19 +135,19 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {data.oceanStats.cleared + data.landStats.delivered}
+              {(showOcean ? data.oceanStats.cleared : 0) + data.landStats.delivered}
             </div>
             <p className="text-xs text-muted-foreground">
-              {data.oceanStats.cleared} cleared, {data.landStats.delivered} delivered
+              {showOcean && <>{data.oceanStats.cleared} cleared, </>}{data.landStats.delivered} delivered
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-6 ${showOcean ? "lg:grid-cols-2" : ""}`}>
         {/* Recent Ocean Freight */}
-        <Card>
+        {showOcean && <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <Ship className="h-5 w-5 text-primary" />
@@ -185,7 +190,7 @@ export function DashboardContent() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Recent Land Freight */}
         <Card>

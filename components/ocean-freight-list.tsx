@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { StatusBadge } from "@/components/status-badge"
 import { OceanFreightCreateDialog } from "@/components/ocean-freight-create-dialog"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth-provider"
+import { CAN_CREATE_FREIGHT } from "@/lib/auth"
 
 async function fetchOceanFreight() {
   const supabase = createClient()
@@ -26,6 +28,8 @@ export function OceanFreightList() {
   const { data: entries, isLoading, mutate } = useSWR("ocean-freight", fetchOceanFreight)
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
+  const { user } = useAuth()
+  const canCreate = user && CAN_CREATE_FREIGHT.includes(user.role)
 
   const filtered = entries?.filter(
     (e) =>
@@ -44,10 +48,12 @@ export function OceanFreightList() {
             Manage vendor documents for MX Customs release
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          New Entry
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            New Entry
+          </Button>
+        )}
       </div>
 
       <div className="relative">
@@ -71,7 +77,7 @@ export function OceanFreightList() {
             <p className="text-sm text-muted-foreground">
               {search ? "No se encontraron resultados" : "No hay entradas de Ocean Freight"}
             </p>
-            {!search && (
+            {!search && canCreate && (
               <Button variant="outline" onClick={() => setShowCreate(true)}>
                 Crear Primera Entrada
               </Button>

@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/app-layout"
 import { OceanFreightDetail } from "@/components/ocean-freight-detail"
+import { RequireRole } from "@/components/require-role"
 
 export default async function OceanFreightDetailPage({
   params,
@@ -9,7 +10,9 @@ export default async function OceanFreightDetailPage({
   const { id } = await params
   return (
     <AppLayout>
-      <OceanFreightDetail id={id} />
+      <RequireRole allowed={["admin", "operador", "cliente"]}>
+        <OceanFreightDetail id={id} />
+      </RequireRole>
     </AppLayout>
   )
 }

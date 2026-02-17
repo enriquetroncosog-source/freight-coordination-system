@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/app-layout"
 import { LandFreightDetail } from "@/components/land-freight-detail"
+import { RequireRole } from "@/components/require-role"
 
 export default async function LandFreightDetailPage({
   params,
@@ -9,7 +10,9 @@ export default async function LandFreightDetailPage({
   const { id } = await params
   return (
     <AppLayout>
-      <LandFreightDetail id={id} />
+      <RequireRole allowed={["admin", "operador", "cliente", "transportista"]}>
+        <LandFreightDetail id={id} />
+      </RequireRole>
     </AppLayout>
   )
 }

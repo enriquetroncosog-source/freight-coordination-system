@@ -21,7 +21,7 @@ async function fetchCarriers() {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("carriers")
-    .select("id, name, phone, email, created_at")
+    .select("id, name, phone, email, scac, caat, created_at")
     .order("name", { ascending: true })
 
   if (error) throw error
@@ -33,6 +33,8 @@ interface EditingCarrier {
   name: string
   phone: string
   email: string
+  scac: string
+  caat: string
 }
 
 export function CarriersList() {
@@ -42,6 +44,8 @@ export function CarriersList() {
   const [newName, setNewName] = useState("")
   const [newPhone, setNewPhone] = useState("")
   const [newEmail, setNewEmail] = useState("")
+  const [newScac, setNewScac] = useState("")
+  const [newCaat, setNewCaat] = useState("")
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<EditingCarrier | null>(null)
   const [editSaving, setEditSaving] = useState(false)
@@ -64,6 +68,8 @@ export function CarriersList() {
       name: newName.trim(),
       phone: newPhone.trim() || null,
       email: newEmail.trim().toLowerCase() || null,
+      scac: newScac.trim().toUpperCase() || null,
+      caat: newCaat.trim() || null,
     })
     setSaving(false)
 
@@ -74,6 +80,8 @@ export function CarriersList() {
       setNewName("")
       setNewPhone("")
       setNewEmail("")
+      setNewScac("")
+      setNewCaat("")
       setShowCreate(false)
       mutate()
     }
@@ -94,6 +102,8 @@ export function CarriersList() {
         name: editing.name.trim(),
         phone: editing.phone.trim() || null,
         email: editing.email.trim().toLowerCase() || null,
+        scac: editing.scac.trim().toUpperCase() || null,
+        caat: editing.caat.trim() || null,
       })
       .eq("id", editing.id)
     setEditSaving(false)
@@ -173,7 +183,7 @@ export function CarriersList() {
                   </div>
                   <div>
                     <CardTitle className="text-base">{carrier.name}</CardTitle>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       {carrier.phone && (
                         <span className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
@@ -184,6 +194,16 @@ export function CarriersList() {
                         <span className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {carrier.email}
+                        </span>
+                      )}
+                      {carrier.scac && (
+                        <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-700 font-medium">
+                          SCAC: {carrier.scac}
+                        </span>
+                      )}
+                      {carrier.caat && (
+                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700 font-medium">
+                          CAAT: {carrier.caat}
                         </span>
                       )}
                     </div>
@@ -198,6 +218,8 @@ export function CarriersList() {
                       name: carrier.name,
                       phone: carrier.phone || "",
                       email: carrier.email || "",
+                      scac: carrier.scac || "",
+                      caat: carrier.caat || "",
                     })}
                   >
                     <Pencil className="h-4 w-4" />
@@ -238,6 +260,16 @@ export function CarriersList() {
               <Label htmlFor="carrier-email">Correo Electrónico</Label>
               <Input id="carrier-email" type="email" placeholder="correo@ejemplo.com" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="carrier-scac">SCAC</Label>
+                <Input id="carrier-scac" placeholder="Ej. ABCD" value={newScac} onChange={(e) => setNewScac(e.target.value)} maxLength={4} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="carrier-caat">CAAT</Label>
+                <Input id="carrier-caat" placeholder="No. CAAT" value={newCaat} onChange={(e) => setNewCaat(e.target.value)} />
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
               <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground">
@@ -268,6 +300,16 @@ export function CarriersList() {
             <div className="flex flex-col gap-2">
               <Label htmlFor="edit-carrier-email">Correo Electrónico</Label>
               <Input id="edit-carrier-email" type="email" placeholder="correo@ejemplo.com" value={editing?.email ?? ""} onChange={(e) => setEditing((prev) => prev ? { ...prev, email: e.target.value } : null)} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-carrier-scac">SCAC</Label>
+                <Input id="edit-carrier-scac" placeholder="Ej. ABCD" value={editing?.scac ?? ""} onChange={(e) => setEditing((prev) => prev ? { ...prev, scac: e.target.value } : null)} maxLength={4} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-carrier-caat">CAAT</Label>
+                <Input id="edit-carrier-caat" placeholder="No. CAAT" value={editing?.caat ?? ""} onChange={(e) => setEditing((prev) => prev ? { ...prev, caat: e.target.value } : null)} />
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>

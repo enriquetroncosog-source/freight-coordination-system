@@ -58,6 +58,7 @@ export function LandFreightCreateDialog({ open, onOpenChange, onCreated }: Props
     freight_time: "",
     origin: "",
     destination: "",
+    import_invoice: "",
     description: "",
     notes: "",
   })
@@ -78,6 +79,7 @@ export function LandFreightCreateDialog({ open, onOpenChange, onCreated }: Props
       freight_time: "",
       origin: "",
       destination: "",
+      import_invoice: "",
       description: "",
       notes: "",
     })
@@ -108,6 +110,7 @@ export function LandFreightCreateDialog({ open, onOpenChange, onCreated }: Props
       freight_time: form.freight_time,
       origin: form.origin.trim() || null,
       destination: form.destination.trim() || null,
+      import_invoice: form.import_invoice.trim() || null,
       description: form.description.trim() || null,
       notes: form.notes.trim() || null,
     })
@@ -189,6 +192,11 @@ export function LandFreightCreateDialog({ open, onOpenChange, onCreated }: Props
             value={form.destination}
             onChange={(name) => updateField("destination", name)}
           />
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="import-invoice">Factura de Importación</Label>
+            <Input id="import-invoice" placeholder="No. de factura de importación" value={form.import_invoice} onChange={(e) => updateField("import_invoice", e.target.value)} />
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="desc">Descripción</Label>

@@ -1,7 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { requireRole } from "@/lib/api-auth"
 
 export async function POST(request: Request) {
+  const auth = await requireRole(["admin", "operador", "transportista"])
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status })
+  }
+
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File

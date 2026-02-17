@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/status-badge"
 import { FileUpload } from "@/components/file-upload"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/components/auth-provider"
+import { CAN_EDIT_FREIGHT, CAN_DELETE_FREIGHT, CAN_UPLOAD_DOCS } from "@/lib/auth"
 
 const DOC_TYPES = [
   { key: "bl", label: "BL" },
@@ -79,6 +81,10 @@ export function OceanFreightDetail({ id }: { id: string }) {
   )
   const [sendingTramite, setSendingTramite] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const { user } = useAuth()
+  const canEdit = user && CAN_EDIT_FREIGHT.includes(user.role)
+  const canDelete = user && CAN_DELETE_FREIGHT.includes(user.role)
+  const canUpload = user && CAN_UPLOAD_DOCS.includes(user.role)
 
   const handleUpload = useCallback(
     async (docType: string, file: File) => {
@@ -294,64 +300,68 @@ export function OceanFreightDetail({ id }: { id: string }) {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={entry.status} />
-          <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {canDelete && (
+            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 py-4">
-          <Button
-            size="sm"
-            className="bg-violet-600 text-white hover:bg-violet-700"
-            onClick={handleSendTramite}
-            disabled={sendingTramite}
-          >
-            <Send className="mr-2 h-4 w-4" />
-            {sendingTramite ? "Enviando..." : "Enviar a Trámite"}
-          </Button>
-          <Button
-            size="sm"
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-            onClick={() => handleUpdateStatus("desaduanamiento_libre", "Marcado como Desaduanamiento Libre")}
-            disabled={updatingStatus === "desaduanamiento_libre"}
-          >
-            <ShieldCheck className="mr-2 h-4 w-4" />
-            Desaduanamiento Libre
-          </Button>
-          <Button
-            size="sm"
-            className="bg-orange-600 text-white hover:bg-orange-700"
-            onClick={() => handleUpdateStatus("reconocimiento_aduanero", "Marcado como Reconocimiento Aduanero")}
-            disabled={updatingStatus === "reconocimiento_aduanero"}
-          >
-            <Search className="mr-2 h-4 w-4" />
-            Reconocimiento Aduanero
-          </Button>
-          {entry.status === "reconocimiento_aduanero" && (
+      {canEdit && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-3 py-4">
+            <Button
+              size="sm"
+              className="bg-violet-600 text-white hover:bg-violet-700"
+              onClick={handleSendTramite}
+              disabled={sendingTramite}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {sendingTramite ? "Enviando..." : "Enviar a Trámite"}
+            </Button>
             <Button
               size="sm"
               className="bg-emerald-600 text-white hover:bg-emerald-700"
-              onClick={() => handleUpdateStatus("liberado_reconocimiento", "Liberado del Reconocimiento Aduanero")}
-              disabled={updatingStatus === "liberado_reconocimiento"}
+              onClick={() => handleUpdateStatus("desaduanamiento_libre", "Marcado como Desaduanamiento Libre")}
+              disabled={updatingStatus === "desaduanamiento_libre"}
             >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Liberado del Reconocimiento
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Desaduanamiento Libre
             </Button>
-          )}
-          <Button
-            size="sm"
-            className="bg-green-600 text-white hover:bg-green-700"
-            onClick={() => handleUpdateStatus("entregado", "Marcado como Entregado")}
-            disabled={updatingStatus === "entregado"}
-          >
-            <PackageCheck className="mr-2 h-4 w-4" />
-            Entregado
-          </Button>
-        </CardContent>
-      </Card>
+            <Button
+              size="sm"
+              className="bg-orange-600 text-white hover:bg-orange-700"
+              onClick={() => handleUpdateStatus("reconocimiento_aduanero", "Marcado como Reconocimiento Aduanero")}
+              disabled={updatingStatus === "reconocimiento_aduanero"}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              Reconocimiento Aduanero
+            </Button>
+            {entry.status === "reconocimiento_aduanero" && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => handleUpdateStatus("liberado_reconocimiento", "Liberado del Reconocimiento Aduanero")}
+                disabled={updatingStatus === "liberado_reconocimiento"}
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Liberado del Reconocimiento
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="bg-green-600 text-white hover:bg-green-700"
+              onClick={() => handleUpdateStatus("entregado", "Marcado como Entregado")}
+              disabled={updatingStatus === "entregado"}
+            >
+              <PackageCheck className="mr-2 h-4 w-4" />
+              Entregado
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Info Card */}
       <Card>
@@ -397,18 +407,31 @@ export function OceanFreightDetail({ id }: { id: string }) {
                       {docType.label}
                     </span>
                   </div>
-                  <FileUpload
-                    label={`Subir ${docType.label}`}
-                    onUpload={(file) => handleUpload(docType.key, file)}
-                    existingFile={
-                      existing
-                        ? { file_name: existing.file_name, file_url: existing.file_url }
-                        : null
-                    }
-                    onRemove={
-                      existing ? () => handleRemoveDoc(existing.id) : undefined
-                    }
-                  />
+                  {canUpload ? (
+                    <FileUpload
+                      label={`Subir ${docType.label}`}
+                      onUpload={(file) => handleUpload(docType.key, file)}
+                      existingFile={
+                        existing
+                          ? { file_name: existing.file_name, file_url: existing.file_url }
+                          : null
+                      }
+                      onRemove={
+                        existing ? () => handleRemoveDoc(existing.id) : undefined
+                      }
+                    />
+                  ) : existing ? (
+                    <a
+                      href={existing.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary underline"
+                    >
+                      {existing.file_name}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Sin documento</span>
+                  )}
                 </div>
               )
             })}
@@ -416,53 +439,6 @@ export function OceanFreightDetail({ id }: { id: string }) {
         </CardContent>
       </Card>
 
-      {/* Enviar a Trámite Dialog */}
-      <Dialog open={showTramiteDialog} onOpenChange={setShowTramiteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enviar a Trámite</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
-              Se enviarán {documents.length} documento(s) adjuntos al correo indicado con la información del embarque.
-            </p>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="tramite-email">
-                Correo del destinatario <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="tramite-email"
-                type="email"
-                placeholder="agente@ejemplo.com"
-                value={tramiteEmail}
-                onChange={(e) => setTramiteEmail(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Vista previa del correo:</p>
-              <p>
-                Buen día, se anexan documentos para trámite de importación del contenedor{" "}
-                <strong>{entry.container_number || "S/N"}</strong> con factura{" "}
-                <strong>{entry.invoice_number || "S/N"}</strong> del cliente{" "}
-                <strong>{entry.client_name}</strong>.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowTramiteDialog(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSendTramite}
-              disabled={sendingTramite}
-              className="bg-violet-600 text-white hover:bg-violet-700"
-            >
-              {sendingTramite ? "Enviando..." : "Enviar Correo"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

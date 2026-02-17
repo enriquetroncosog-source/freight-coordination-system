@@ -1,12 +1,12 @@
 import { AppLayout } from "@/components/app-layout"
-import { CarriersList } from "@/components/carriers-list"
+import { UserManagement } from "@/components/user-management"
 import { RequireRole } from "@/components/require-role"
 
-export default function CarriersPage() {
+export default function AdminPage() {
   return (
     <AppLayout>
-      <RequireRole allowed={["admin", "operador"]}>
-        <CarriersList />
+      <RequireRole allowed={["admin"]}>
+        <UserManagement />
       </RequireRole>
     </AppLayout>
   )
