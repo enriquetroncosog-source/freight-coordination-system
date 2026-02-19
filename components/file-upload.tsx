@@ -25,7 +25,7 @@ interface FileUploadProps {
 
 export function FileUpload({
   onUpload,
-  accept = ".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx",
+  accept = ".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx,.xml",
   label,
   existingFile,
   existingFiles,
