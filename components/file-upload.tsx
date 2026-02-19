@@ -83,6 +83,23 @@ export function FileUpload({
     setIsDragging(false)
   }, [])
 
+  const handleDownload = useCallback(async (url: string, fileName: string) => {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = blobUrl
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(url, "_blank")
+    }
+  }, [])
+
   const previewType = previewFile ? isPreviewable(previewFile.file_name) : false
 
   return (
@@ -113,16 +130,15 @@ export function FileUpload({
                   <Eye className="h-4 w-4" />
                 </Button>
               )}
-              <a href={f.file_url} download={f.file_name} target="_blank" rel="noopener noreferrer">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900"
-                  title="Descargar"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </a>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDownload(f.file_url, f.file_name)}
+                className="h-8 w-8 p-0 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900"
+                title="Descargar"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
               {(onRemoveFile && f.id) ? (
                 <Button
                   variant="ghost"
@@ -210,12 +226,14 @@ export function FileUpload({
             )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <a href={previewFile?.file_url} download={previewFile?.file_name} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Descargar
-              </Button>
-            </a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => previewFile && handleDownload(previewFile.file_url, previewFile.file_name)}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
