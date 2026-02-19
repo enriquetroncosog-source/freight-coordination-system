@@ -31,7 +31,7 @@ function infoTable(fields: { label: string; value: string | undefined | null }[]
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRole(["admin", "operador"])
+  const auth = await requireRole(["admin", "operador", "transportista"])
   if (auth.error) {
     return NextResponse.json({ error: auth.error }, { status: auth.status })
   }

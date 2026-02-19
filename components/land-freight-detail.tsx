@@ -379,7 +379,12 @@ export function LandFreightDetail({ id }: { id: string }) {
   }
 
   const { entry, documents } = data
-  const docsByType = new Map(documents.map((d) => [d.doc_type, d]))
+  const docsByType = new Map<string, typeof documents>()
+  for (const d of documents) {
+    const arr = docsByType.get(d.doc_type) ?? []
+    arr.push(d)
+    docsByType.set(d.doc_type, arr)
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -506,8 +511,8 @@ export function LandFreightDetail({ id }: { id: string }) {
         <CardContent>
           <div className="flex flex-col gap-3">
             {DOC_PROGRESS_STEPS.map((step, idx) => {
-              const uploaded = docsByType.has(step.key)
-              const allPreviousUploaded = DOC_PROGRESS_STEPS.slice(0, idx).every((s) => docsByType.has(s.key))
+              const uploaded = (docsByType.get(step.key)?.length ?? 0) > 0
+              const allPreviousUploaded = DOC_PROGRESS_STEPS.slice(0, idx).every((s) => (docsByType.get(s.key)?.length ?? 0) > 0)
               const isCurrent = !uploaded && allPreviousUploaded
               return (
                 <div
@@ -535,7 +540,7 @@ export function LandFreightDetail({ id }: { id: string }) {
             })}
             {/* Ready indicator */}
             {(() => {
-              const allUploaded = DOC_PROGRESS_STEPS.every((s) => docsByType.has(s.key))
+              const allUploaded = DOC_PROGRESS_STEPS.every((s) => (docsByType.get(s.key)?.length ?? 0) > 0)
               return (
                 <div
                   className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
@@ -625,43 +630,45 @@ export function LandFreightDetail({ id }: { id: string }) {
         <CardContent>
           <div className="flex flex-col gap-4">
             {LAND_DOC_TYPES.map((docType) => {
-              const existing = docsByType.get(docType.key)
+              const existingDocs = docsByType.get(docType.key) ?? []
               // Transportista can only upload carta_porte
               const canUploadThis = canUpload && (!isTransportista || docType.key === "carta_porte")
               return (
                 <div key={docType.key} className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    {existing ? (
+                    {existingDocs.length > 0 ? (
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                     ) : (
                       <Circle className="h-5 w-5 text-muted-foreground/40" />
                     )}
                     <span className="text-sm font-medium text-foreground">
                       {docType.label}
+                      {existingDocs.length > 1 && (
+                        <span className="ml-1 text-xs text-muted-foreground">({existingDocs.length})</span>
+                      )}
                     </span>
                   </div>
                   {canUploadThis ? (
                     <FileUpload
                       label={`Subir ${docType.label}`}
                       onUpload={(file) => handleUpload(docType.key, file)}
-                      existingFile={
-                        existing
-                          ? { file_name: existing.file_name, file_url: existing.file_url }
-                          : null
-                      }
-                      onRemove={
-                        existing ? () => handleRemoveDoc(existing.id) : undefined
-                      }
+                      existingFiles={existingDocs.map((d) => ({ id: d.id, file_name: d.file_name, file_url: d.file_url }))}
+                      onRemoveFile={(fileId) => handleRemoveDoc(fileId)}
                     />
-                  ) : existing ? (
-                    <a
-                      href={existing.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary underline"
-                    >
-                      {existing.file_name}
-                    </a>
+                  ) : existingDocs.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {existingDocs.map((doc) => (
+                        <a
+                          key={doc.id}
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary underline"
+                        >
+                          {doc.file_name}
+                        </a>
+                      ))}
+                    </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">Sin documento</span>
                   )}
