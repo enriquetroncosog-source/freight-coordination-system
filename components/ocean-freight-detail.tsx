@@ -4,9 +4,25 @@ import { useCallback, useState } from "react"
 import useSWR from "swr"
 import Link from "next/link"
 import { toast } from "sonner"
-import { ArrowLeft, Ship, CheckCircle2, Circle, Trash2, Send, ShieldCheck, Search, PackageCheck } from "lucide-react"
+import { ArrowLeft, Ship, CheckCircle2, Circle, Trash2, Send, ShieldCheck, Search, PackageCheck, Pencil, Plus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { StatusBadge } from "@/components/status-badge"
 import { FileUpload } from "@/components/file-upload"
 import { createClient } from "@/lib/supabase/client"
@@ -32,6 +48,40 @@ const INFO_FIELDS = [
   { key: "pedimento_number", label: "No. Pedimento" },
   { key: "bl_number", label: "No. BL" },
 ] as const
+
+async function fetchClientes() {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("clientes")
+    .select("id, name")
+    .order("name", { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+async function fetchProveedores(clienteId: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("proveedores")
+    .select("id, name, tax_id")
+    .eq("cliente_id", clienteId)
+    .order("name", { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+interface EditForm {
+  cliente_id: string
+  client_name: string
+  proveedor_id: string
+  vendor_name: string
+  vendor_tax_id: string
+  container_number: string
+  vessel_number: string
+  invoice_number: string
+  pedimento_number: string
+  bl_number: string
+}
 
 async function fetchOceanDetail(id: string) {
   const supabase = createClient()
@@ -81,10 +131,101 @@ export function OceanFreightDetail({ id }: { id: string }) {
   )
   const [sendingTramite, setSendingTramite] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editForm, setEditForm] = useState<EditForm | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [showNewProveedor, setShowNewProveedor] = useState(false)
+  const [newProveedorName, setNewProveedorName] = useState("")
+  const [newProveedorTaxId, setNewProveedorTaxId] = useState("")
   const { user } = useAuth()
   const canEdit = user && CAN_EDIT_FREIGHT.includes(user.role)
   const canDelete = user && CAN_DELETE_FREIGHT.includes(user.role)
   const canUpload = user && CAN_UPLOAD_DOCS.includes(user.role)
+
+  const { data: clientes } = useSWR(showEdit ? "clientes" : null, fetchClientes)
+  const { data: proveedores, mutate: mutateProveedores } = useSWR(
+    showEdit && editForm?.cliente_id ? `proveedores-${editForm.cliente_id}` : null,
+    () => fetchProveedores(editForm!.cliente_id)
+  )
+
+  function openEditDialog() {
+    if (!data?.entry) return
+    const e = data.entry
+    setEditForm({
+      cliente_id: e.cliente_id ?? "",
+      client_name: e.client_name ?? "",
+      proveedor_id: e.proveedor_id ?? "",
+      vendor_name: e.vendor_name ?? "",
+      vendor_tax_id: e.vendor_tax_id ?? "",
+      container_number: e.container_number ?? "",
+      vessel_number: e.vessel_number ?? "",
+      invoice_number: e.invoice_number ?? "",
+      pedimento_number: e.pedimento_number ?? "",
+      bl_number: e.bl_number ?? "",
+    })
+    setShowNewProveedor(false)
+    setShowEdit(true)
+  }
+
+  const handleCreateProveedor = useCallback(async () => {
+    if (!newProveedorName.trim() || !editForm?.cliente_id) return
+    const sb = createClient()
+    const { data: prov, error } = await sb
+      .from("proveedores")
+      .insert({
+        name: newProveedorName.trim(),
+        tax_id: newProveedorTaxId.trim() || null,
+        cliente_id: editForm.cliente_id,
+      })
+      .select("id, name, tax_id")
+      .single()
+    if (error) {
+      toast.error("Error al crear proveedor: " + error.message)
+      return
+    }
+    toast.success("Proveedor creado")
+    setEditForm((prev) => prev ? { ...prev, proveedor_id: prov.id, vendor_name: prov.name, vendor_tax_id: prov.tax_id ?? "" } : null)
+    setShowNewProveedor(false)
+    setNewProveedorName("")
+    setNewProveedorTaxId("")
+    mutateProveedores()
+  }, [newProveedorName, newProveedorTaxId, editForm, mutateProveedores])
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editForm) return
+    if (!editForm.cliente_id) {
+      toast.error("Selecciona un cliente")
+      return
+    }
+
+    setEditSaving(true)
+    const sb = createClient()
+    const { error } = await sb
+      .from("ocean_freight")
+      .update({
+        cliente_id: editForm.cliente_id,
+        client_name: editForm.client_name,
+        proveedor_id: editForm.proveedor_id || null,
+        vendor_name: editForm.vendor_name || null,
+        vendor_tax_id: editForm.vendor_tax_id || null,
+        container_number: editForm.container_number.trim() || null,
+        vessel_number: editForm.vessel_number.trim() || null,
+        invoice_number: editForm.invoice_number.trim() || null,
+        pedimento_number: editForm.pedimento_number.trim() || null,
+        bl_number: editForm.bl_number.trim() || null,
+      })
+      .eq("id", id)
+    setEditSaving(false)
+
+    if (error) {
+      toast.error("Error al actualizar: " + error.message)
+      return
+    }
+
+    toast.success("Embarque actualizado")
+    setShowEdit(false)
+    mutate()
+  }, [editForm, id, mutate])
 
   const handleUpload = useCallback(
     async (docType: string, file: File) => {
@@ -305,6 +446,11 @@ export function OceanFreightDetail({ id }: { id: string }) {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={entry.status} />
+          {canEdit && (
+            <Button variant="ghost" size="sm" onClick={openEditDialog}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
           {canDelete && (
             <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
               <Trash2 className="h-4 w-4" />
@@ -446,6 +592,133 @@ export function OceanFreightDetail({ id }: { id: string }) {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Embarque</DialogTitle>
+          </DialogHeader>
+          {editForm && (
+            <div className="flex flex-col gap-4">
+              {/* Cliente */}
+              <div className="flex flex-col gap-2">
+                <Label>
+                  Cliente <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={editForm.cliente_id}
+                  onValueChange={(val) => {
+                    const c = clientes?.find((c) => c.id === val)
+                    setEditForm((prev) => prev ? { ...prev, cliente_id: val, client_name: c?.name ?? "", proveedor_id: "", vendor_name: "", vendor_tax_id: "" } : null)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Proveedor */}
+              {editForm.cliente_id && (
+                <div className="flex flex-col gap-2">
+                  <Label>Proveedor</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={editForm.proveedor_id}
+                      onValueChange={(val) => {
+                        const p = proveedores?.find((p) => p.id === val)
+                        setEditForm((prev) => prev ? { ...prev, proveedor_id: val, vendor_name: p?.name ?? "", vendor_tax_id: p?.tax_id ?? "" } : null)
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecciona un proveedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {proveedores?.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name} {p.tax_id ? `(${p.tax_id})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setShowNewProveedor(!showNewProveedor)}
+                      title="Nuevo proveedor"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {showNewProveedor && (
+                    <div className="rounded-lg border p-3 flex flex-col gap-3 bg-muted/30">
+                      <p className="text-sm font-medium">Nuevo Proveedor</p>
+                      <div className="flex flex-col gap-2">
+                        <Label>Nombre</Label>
+                        <Input
+                          placeholder="Nombre del proveedor"
+                          value={newProveedorName}
+                          onChange={(e) => setNewProveedorName(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label>Tax ID (opcional)</Label>
+                        <Input
+                          placeholder="Tax ID del proveedor"
+                          value={newProveedorTaxId}
+                          onChange={(e) => setNewProveedorTaxId(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewProveedor(false)}>
+                          Cancelar
+                        </Button>
+                        <Button type="button" size="sm" onClick={handleCreateProveedor}>
+                          Crear Proveedor
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Extra fields */}
+              {[
+                { key: "container_number", label: "No. Contenedor", placeholder: "Número de contenedor" },
+                { key: "vessel_number", label: "No. Vessel", placeholder: "Número de vessel" },
+                { key: "invoice_number", label: "No. Invoice", placeholder: "Número de invoice" },
+                { key: "pedimento_number", label: "No. Pedimento", placeholder: "Número de pedimento" },
+                { key: "bl_number", label: "No. BL", placeholder: "Número de Bill of Lading" },
+              ].map((f) => (
+                <div key={f.key} className="flex flex-col gap-2">
+                  <Label>{f.label}</Label>
+                  <Input
+                    placeholder={f.placeholder}
+                    value={editForm[f.key as keyof EditForm]}
+                    onChange={(e) => setEditForm((prev) => prev ? { ...prev, [f.key]: e.target.value } : null)}
+                  />
+                </div>
+              ))}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowEdit(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={editSaving} className="bg-primary text-primary-foreground">
+                  {editSaving ? "Guardando..." : "Guardar Cambios"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
