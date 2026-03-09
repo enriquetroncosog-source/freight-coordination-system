@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { requireRole } from "@/lib/api-auth"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 const STATUS_LABELS: Record<string, string> = {
   enviado_tramite: "Enviado a Trámite",
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const subject = `${statusLabel} - Contenedor ${containerNumber || "S/N"} - ${clientName}`
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "Core Integrated Solutions <no-reply@core-logistics.com>",
       to,
       subject,

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { requireRole } from "@/lib/api-auth"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function POST(req: NextRequest) {
   const auth = await requireRole(["admin", "operador"])
@@ -17,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "Core Integrated Solutions <no-reply@core-logistics.com>",
       to,
       subject: `Documento subido: ${docType} - ${vendorName || ""}`,
