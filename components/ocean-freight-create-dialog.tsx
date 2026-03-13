@@ -57,6 +57,8 @@ export function OceanFreightCreateDialog({ open, onOpenChange, onCreated }: Prop
   const [newProveedorName, setNewProveedorName] = useState("")
   const [newProveedorTaxId, setNewProveedorTaxId] = useState("")
   const [form, setForm] = useState({
+    etd: "",
+    eta: "",
     container_number: "",
     vessel_number: "",
     invoice_number: "",
@@ -82,6 +84,8 @@ export function OceanFreightCreateDialog({ open, onOpenChange, onCreated }: Prop
     setNewProveedorName("")
     setNewProveedorTaxId("")
     setForm({
+      etd: "",
+      eta: "",
       container_number: "",
       vessel_number: "",
       invoice_number: "",
@@ -141,6 +145,8 @@ export function OceanFreightCreateDialog({ open, onOpenChange, onCreated }: Prop
       vendor_name: selectedProveedor?.name ?? "",
       proveedor_id: selectedProveedorId,
       vendor_tax_id: selectedProveedor?.tax_id ?? null,
+      etd: form.etd || null,
+      eta: form.eta || null,
       container_number: form.container_number.trim() || null,
       vessel_number: form.vessel_number.trim() || null,
       invoice_number: form.invoice_number.trim() || null,
@@ -267,6 +273,28 @@ export function OceanFreightCreateDialog({ open, onOpenChange, onCreated }: Prop
               )}
             </div>
           )}
+
+          {/* Date fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="etd">ETD</Label>
+              <Input
+                id="etd"
+                type="date"
+                value={form.etd}
+                onChange={(e) => updateField("etd", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="eta">ETA</Label>
+              <Input
+                id="eta"
+                type="date"
+                value={form.eta}
+                onChange={(e) => updateField("eta", e.target.value)}
+              />
+            </div>
+          </div>
 
           {/* Extra fields */}
           {extraFields.map((f) => (

@@ -42,6 +42,8 @@ const INFO_FIELDS = [
   { key: "client_name", label: "Cliente" },
   { key: "vendor_name", label: "Proveedor" },
   { key: "vendor_tax_id", label: "Tax ID Proveedor" },
+  { key: "etd", label: "ETD" },
+  { key: "eta", label: "ETA" },
   { key: "container_number", label: "No. Contenedor" },
   { key: "vessel_number", label: "No. Vessel" },
   { key: "invoice_number", label: "No. Invoice" },
@@ -76,6 +78,8 @@ interface EditForm {
   proveedor_id: string
   vendor_name: string
   vendor_tax_id: string
+  etd: string
+  eta: string
   container_number: string
   vessel_number: string
   invoice_number: string
@@ -157,6 +161,8 @@ export function OceanFreightDetail({ id }: { id: string }) {
       proveedor_id: e.proveedor_id ?? "",
       vendor_name: e.vendor_name ?? "",
       vendor_tax_id: e.vendor_tax_id ?? "",
+      etd: e.etd ?? "",
+      eta: e.eta ?? "",
       container_number: e.container_number ?? "",
       vessel_number: e.vessel_number ?? "",
       invoice_number: e.invoice_number ?? "",
@@ -208,6 +214,8 @@ export function OceanFreightDetail({ id }: { id: string }) {
         proveedor_id: editForm.proveedor_id || null,
         vendor_name: editForm.vendor_name || null,
         vendor_tax_id: editForm.vendor_tax_id || null,
+        etd: editForm.etd || null,
+        eta: editForm.eta || null,
         container_number: editForm.container_number.trim() || null,
         vessel_number: editForm.vessel_number.trim() || null,
         invoice_number: editForm.invoice_number.trim() || null,
@@ -688,6 +696,26 @@ export function OceanFreightDetail({ id }: { id: string }) {
                   )}
                 </div>
               )}
+
+              {/* Date fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label>ETD</Label>
+                  <Input
+                    type="date"
+                    value={editForm.etd}
+                    onChange={(e) => setEditForm((prev) => prev ? { ...prev, etd: e.target.value } : null)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>ETA</Label>
+                  <Input
+                    type="date"
+                    value={editForm.eta}
+                    onChange={(e) => setEditForm((prev) => prev ? { ...prev, eta: e.target.value } : null)}
+                  />
+                </div>
+              </div>
 
               {/* Extra fields */}
               {[
